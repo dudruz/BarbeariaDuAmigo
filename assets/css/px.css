@@ -1,0 +1,272 @@
+/* ============================================================
+   Corte Dú Amigo — px.css
+   Identidade "oficina de barbeiro": café-carvão + latão + aço.
+   Mobile-first.
+   ============================================================ */
+
+:root{
+  /* superfície quente (nada de preto frio) */
+  --bg:        #17120E;
+  --surface:   #201A15;
+  --surface-2: #2A231C;
+  --line:      #3A3128;
+
+  /* tinta */
+  --ink:   #F3ECE3;
+  --muted: #A79B8C;
+
+  /* acentos */
+  --brass:      #C9942F;   /* latão/tabaco — CTA e estado ativo */
+  --brass-deep: #A9781F;
+  --brass-soft: rgba(201,148,47,.14);
+  --steel:      #AEB4B8;   /* aço — rótulos, ferramentas */
+
+  --ok:     #7BA05B;
+  --danger: #D9704F;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 18px 40px -24px rgba(0,0,0,.8);
+
+  --wrap: 720px;
+  --step: clamp(1rem, 4vw, 1.5rem);
+
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Spline Sans", system-ui, sans-serif;
+}
+
+*{ box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-size:16px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+img{ max-width:100%; display:block; }
+button{ font:inherit; color:inherit; cursor:pointer; }
+
+.wrap{ width:100%; max-width:var(--wrap); margin-inline:auto; padding-inline:var(--step); }
+
+/* -------- rótulo/eyebrow em aço -------- */
+.eyebrow{
+  font-size:.72rem; letter-spacing:.22em; text-transform:uppercase;
+  color:var(--steel); font-weight:600; margin:0;
+}
+
+/* ============================================================
+   Cabeçalho + hero
+   ============================================================ */
+.top{ padding-top:calc(var(--step) + env(safe-area-inset-top)); }
+.brand{
+  font-family:var(--font-display);
+  font-optical-sizing:auto;
+  font-weight:600;
+  font-size:clamp(2rem, 9vw, 3.2rem);
+  line-height:1.02;
+  letter-spacing:-.01em;
+  margin:.35rem 0 0;
+}
+.hero{ padding:1.4rem 0 1.8rem; border-bottom:1px solid var(--line); }
+.hero h1{
+  font-family:var(--font-display);
+  font-weight:400; font-style:italic;
+  font-size:clamp(1.15rem, 5vw, 1.5rem);
+  margin:1.1rem 0 .4rem; color:var(--ink);
+}
+.hero p{ margin:0; color:var(--muted); max-width:46ch; }
+.chip{
+  display:inline-flex; align-items:center; gap:.35rem;
+  margin-top:1rem; padding:.34rem .7rem;
+  background:var(--brass-soft); color:var(--brass);
+  border:1px solid rgba(201,148,47,.35); border-radius:999px;
+  font-size:.8rem; font-weight:600; text-decoration:none;
+}
+
+/* ============================================================
+   Stepper (01 · 02 · 03) — encoda a sequência real
+   ============================================================ */
+.stepper{ display:flex; gap:.5rem; padding:1.3rem 0 .4rem; }
+.stepper li{ flex:1; list-style:none; }
+.stepper b{
+  display:block; font-family:var(--font-body);
+  font-size:.7rem; letter-spacing:.16em; color:var(--muted);
+  text-transform:uppercase;
+}
+.stepper span{
+  display:block; font-size:.9rem; color:var(--muted); margin-top:.15rem;
+  padding-top:.5rem; border-top:2px solid var(--line);
+  transition:color .25s, border-color .25s;
+}
+.stepper li.active span,
+.stepper li.done span{ color:var(--ink); border-color:var(--brass); }
+
+/* ============================================================
+   Passos (painéis revelados em sequência)
+   ============================================================ */
+.step{ display:none; padding:1.4rem 0; border-bottom:1px solid var(--line); }
+.step.show{ display:block; animation:rise .35s ease both; }
+@keyframes rise{ from{ opacity:0; transform:translateY(8px);} to{ opacity:1; transform:none;} }
+
+.step h2{
+  font-family:var(--font-display); font-weight:500;
+  font-size:1.3rem; margin:.5rem 0 1rem;
+}
+.step h2 small{ font-family:var(--font-body); color:var(--steel); font-size:.72rem; letter-spacing:.16em; }
+
+/* -------- cards de serviço -------- */
+.servicos{ display:grid; grid-template-columns:1fr; gap:.7rem; }
+.servico{
+  display:flex; gap:.9rem; align-items:center; text-align:left; width:100%;
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--radius); padding:.7rem; transition:border-color .18s, transform .18s;
+}
+.servico:hover{ border-color:var(--brass-deep); }
+.servico[aria-pressed="true"]{ border-color:var(--brass); box-shadow:inset 0 0 0 1px var(--brass); }
+.servico-img{
+  width:64px; height:64px; flex:0 0 64px; border-radius:var(--radius-sm);
+  object-fit:cover; background:var(--surface-2);
+  display:grid; place-items:center; color:var(--steel);
+  font-family:var(--font-display); font-size:1.5rem; overflow:hidden;
+}
+.servico-info{ flex:1; min-width:0; }
+.servico-info strong{ display:block; font-size:1.02rem; }
+.servico-meta{ color:var(--muted); font-size:.85rem; margin-top:.15rem; }
+.servico-preco{ font-family:var(--font-display); color:var(--brass); font-weight:600; font-size:1.1rem; white-space:nowrap; }
+
+/* -------- tira de dias -------- */
+.dias{
+  display:flex; gap:.5rem; overflow-x:auto; padding-bottom:.5rem;
+  scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch;
+}
+.dia{
+  flex:0 0 auto; scroll-snap-align:start;
+  min-width:64px; text-align:center;
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--radius-sm); padding:.6rem .5rem; transition:border-color .18s;
+}
+.dia small{ display:block; font-size:.68rem; letter-spacing:.1em; color:var(--muted); text-transform:uppercase; }
+.dia b{ display:block; font-family:var(--font-display); font-size:1.35rem; line-height:1.1; margin-top:.15rem; }
+.dia:hover{ border-color:var(--brass-deep); }
+.dia[aria-pressed="true"]{ background:var(--brass); border-color:var(--brass); color:#160f06; }
+.dia[aria-pressed="true"] small{ color:#3a2a09; }
+
+/* -------- grade de horários (a "caderneta") -------- */
+.slots{
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:.5rem; margin-top:1rem;
+}
+.slot{
+  font-family:var(--font-body); font-variant-numeric:tabular-nums;
+  font-size:1rem; letter-spacing:.02em;
+  padding:.7rem .3rem; text-align:center;
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--radius-sm); transition:border-color .15s, background .15s;
+}
+.slot:hover:not(:disabled){ border-color:var(--brass); }
+.slot[aria-pressed="true"]{ background:var(--brass); border-color:var(--brass); color:#160f06; font-weight:600; }
+.slot:disabled{
+  color:var(--muted); text-decoration:line-through;
+  text-decoration-color:var(--danger); text-decoration-thickness:2px;
+  opacity:.55; cursor:not-allowed; background:transparent;
+}
+.slots-vazio{ color:var(--muted); padding:1rem 0; margin:0; }
+
+/* ============================================================
+   Formulário / confirmação
+   ============================================================ */
+.resumo{
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--radius); padding:1rem; margin-bottom:1.1rem;
+}
+.resumo dt{ font-size:.7rem; letter-spacing:.16em; text-transform:uppercase; color:var(--steel); }
+.resumo dd{ margin:.15rem 0 .8rem; font-size:1.05rem; }
+.resumo dd:last-child{ margin-bottom:0; }
+
+.campo{ margin-bottom:1rem; }
+.campo label{ display:block; font-size:.85rem; color:var(--muted); margin-bottom:.35rem; }
+.campo input{
+  width:100%; background:var(--surface-2); color:var(--ink);
+  border:1px solid var(--line); border-radius:var(--radius-sm);
+  padding:.8rem .9rem; font-size:1rem;
+}
+.campo input:focus{ outline:none; border-color:var(--brass); }
+
+/* botões */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+  width:100%; padding:.95rem 1.2rem; border:none; border-radius:var(--radius);
+  background:var(--brass); color:#160f06; font-weight:600; font-size:1.02rem;
+  transition:filter .15s, transform .05s;
+}
+.btn:hover{ filter:brightness(1.06); }
+.btn:active{ transform:translateY(1px); }
+.btn:disabled{ opacity:.6; cursor:progress; }
+.btn-ghost{ background:transparent; color:var(--muted); border:1px solid var(--line); }
+.btn-ghost:hover{ color:var(--ink); border-color:var(--steel); filter:none; }
+
+/* ============================================================
+   Sucesso + avaliação
+   ============================================================ */
+.sucesso{ text-align:center; padding:2.2rem 0; }
+.sucesso .selo{
+  width:64px; height:64px; margin:0 auto 1rem; border-radius:50%;
+  display:grid; place-items:center; background:var(--brass-soft);
+  border:1px solid var(--brass); color:var(--brass); font-size:1.8rem;
+}
+.sucesso h2{ font-family:var(--font-display); font-weight:500; margin:0 0 .4rem; }
+.sucesso p{ color:var(--muted); margin:.2rem 0; }
+.sucesso .destaque{ color:var(--ink); font-size:1.1rem; }
+
+.review{ margin-top:1.6rem; padding-top:1.4rem; border-top:1px solid var(--line); }
+.estrelas{ display:flex; justify-content:center; gap:.35rem; margin:.8rem 0; }
+.estrela{ background:none; border:none; font-size:1.9rem; line-height:1; color:var(--line); transition:color .12s; padding:0; }
+.estrela.on{ color:var(--brass); }
+.review textarea{
+  width:100%; margin-top:.5rem; background:var(--surface-2); color:var(--ink);
+  border:1px solid var(--line); border-radius:var(--radius-sm);
+  padding:.8rem; font:inherit; resize:vertical; min-height:72px;
+}
+.google-btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+  width:100%; margin-top:1rem; padding:.9rem; border-radius:var(--radius);
+  background:var(--surface); border:1px solid var(--steel); color:var(--ink);
+  text-decoration:none; font-weight:600;
+}
+.google-btn:hover{ border-color:var(--brass); }
+
+/* ============================================================
+   Rodapé + toast
+   ============================================================ */
+.rodape{
+  padding:1.8rem 0 calc(2rem + env(safe-area-inset-bottom));
+  color:var(--muted); font-size:.88rem;
+}
+.rodape a{ color:var(--steel); }
+.rodape strong{ color:var(--ink); display:block; font-family:var(--font-display); font-size:1.05rem; margin-bottom:.3rem; }
+
+.toast{
+  position:fixed; left:50%; bottom:1.2rem; transform:translateX(-50%) translateY(200%);
+  background:var(--surface-2); color:var(--ink); border:1px solid var(--line);
+  border-left:3px solid var(--danger);
+  padding:.8rem 1.1rem; border-radius:var(--radius); box-shadow:var(--shadow);
+  max-width:calc(100% - 2rem); z-index:50; transition:transform .3s ease;
+}
+.toast.show{ transform:translateX(-50%) translateY(0); }
+
+/* ============================================================
+   Desktop
+   ============================================================ */
+@media (min-width:640px){
+  .servicos{ grid-template-columns:1fr 1fr; }
+  .slots{ grid-template-columns:repeat(4, 1fr); }
+  .servico-img{ width:72px; height:72px; flex-basis:72px; }
+}
+
+/* acessibilidade */
+:focus-visible{ outline:2px solid var(--brass); outline-offset:2px; border-radius:4px; }
+@media (prefers-reduced-motion:reduce){
+  *{ animation:none !important; transition:none !important; }
+}

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Corte Dú Amigo — Agende seu horário</title>
+  <meta name="description" content="Agende seu corte na Barbearia Corte Dú Amigo, em Minaslândia, Belo Horizonte. Escolha o serviço, o dia e o horário.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/px.css">
+</head>
+<body>
+
+  <header class="top wrap">
+    <p class="eyebrow">Minaslândia · Belo Horizonte</p>
+    <p class="brand">Corte Dú&nbsp;Amigo</p>
+  </header>
+
+  <section class="hero wrap">
+    <h1>Agende seu horário com o Duin.</h1>
+    <p>Escolha o serviço, o dia e o horário. Você paga na barbearia, depois do corte.</p>
+    <a class="chip" href="https://search.google.com/local/writereview?placeid=ChIJf_G04ZeapgARG7gkWs3lhf8" target="_blank" rel="noopener">★ 5,0 no Google</a>
+  </section>
+
+  <main class="wrap">
+    <ol class="stepper">
+      <li id="step-1" class="active"><span><b>01</b> Serviço</span></li>
+      <li id="step-2"><span><b>02</b> Dia e horário</span></li>
+      <li id="step-3"><span><b>03</b> Confirmar</span></li>
+    </ol>
+
+    <!-- 01 · serviço -->
+    <section id="s1" class="step show" aria-labelledby="t1">
+      <h2 id="t1">Escolha o serviço</h2>
+      <div id="servicos" class="servicos"><p class="slots-vazio">Carregando serviços…</p></div>
+    </section>
+
+    <!-- 02 · dia e horário -->
+    <section id="s2" class="step" aria-labelledby="t2">
+      <h2 id="t2">Escolha o dia e o horário</h2>
+      <div id="dias" class="dias"></div>
+      <div id="slots" class="slots"></div>
+      <p id="slots-vazio" class="slots-vazio">Escolha um serviço para ver os horários.</p>
+    </section>
+
+    <!-- 03 · confirmar -->
+    <section id="s3" class="step" aria-labelledby="t3">
+      <h2 id="t3">Confirme seus dados</h2>
+      <dl class="resumo">
+        <dt>Serviço</dt><dd id="r-servico">—</dd>
+        <dt>Valor</dt><dd id="r-preco">—</dd>
+        <dt>Horário</dt><dd id="r-horario">—</dd>
+      </dl>
+      <div class="campo">
+        <label for="f-nome">Seu nome</label>
+        <input id="f-nome" type="text" autocomplete="name" placeholder="Como o Duin te chama?">
+      </div>
+      <div class="campo">
+        <label for="f-whats">WhatsApp (com DDD)</label>
+        <input id="f-whats" type="tel" inputmode="numeric" autocomplete="tel" placeholder="31 9 9999-9999">
+      </div>
+      <button id="btn-confirmar" class="btn" type="button">Confirmar horário</button>
+    </section>
+
+    <!-- sucesso -->
+    <section id="sucesso" class="step sucesso" aria-live="polite">
+      <div class="selo" aria-hidden="true">✓</div>
+      <h2>Horário confirmado, <span id="suc-nome">amigo</span>!</h2>
+      <p class="destaque" id="suc-horario">—</p>
+      <p id="suc-servico">—</p>
+      <p>Te esperamos na barbearia. É só chegar no horário.</p>
+
+      <div class="review" id="review-form">
+        <p class="eyebrow">Depois do corte, conta pra gente</p>
+        <div class="estrelas" role="group" aria-label="Sua nota de 1 a 5">
+          <button class="estrela" type="button" data-n="1" aria-label="1 estrela">★</button>
+          <button class="estrela" type="button" data-n="2" aria-label="2 estrelas">★</button>
+          <button class="estrela" type="button" data-n="3" aria-label="3 estrelas">★</button>
+          <button class="estrela" type="button" data-n="4" aria-label="4 estrelas">★</button>
+          <button class="estrela" type="button" data-n="5" aria-label="5 estrelas">★</button>
+        </div>
+        <textarea id="f-comentario" placeholder="O que você achou? (opcional)"></textarea>
+        <button id="btn-feedback" class="btn btn-ghost" type="button" style="margin-top:.7rem">Enviar feedback</button>
+      </div>
+
+      <a class="google-btn" href="https://search.google.com/local/writereview?placeid=ChIJf_G04ZeapgARG7gkWs3lhf8" target="_blank" rel="noopener">
+        ★ Avaliar no Google
+      </a>
+    </section>
+  </main>
+
+  <footer class="rodape wrap">
+    <strong>Barbearia Corte Dú Amigo</strong>
+    R. Santa Clara de Assis, 20 — Minaslândia, BH<br>
+    Ter a Sáb · 9h às 19h30 &nbsp;·&nbsp;
+    <a href="https://www.google.com/maps/search/?api=1&query=Barbearia%20Corte%20D%C3%BA%20Amigo&query_place_id=ChIJf_G04ZeapgARG7gkWs3lhf8" target="_blank" rel="noopener">Ver no mapa</a>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="assets/js/agenda.js"></script>
+</body>
+</html>
