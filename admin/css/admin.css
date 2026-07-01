@@ -1,0 +1,109 @@
+/* ============================================================
+   Corte Dú Amigo — admin.css
+   Painel do Duin. Usa os tokens do px.css (:root).
+   ============================================================ */
+
+/* -------- login -------- */
+.login-wrap{ min-height:100dvh; display:grid; place-items:center; padding:var(--step); }
+.login-card{
+  width:100%; max-width:380px;
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--radius); padding:1.8rem; box-shadow:var(--shadow);
+}
+.login-card .brand{ font-size:1.9rem; margin:0 0 .2rem; }
+.login-card .eyebrow{ margin-bottom:1.4rem; }
+.login-erro{ color:var(--danger); font-size:.9rem; margin:.2rem 0 0; min-height:1.2em; }
+
+/* -------- topbar + tabs -------- */
+.topbar{
+  position:sticky; top:0; z-index:20;
+  display:flex; align-items:center; justify-content:space-between;
+  gap:1rem; padding:.9rem var(--step);
+  background:rgba(23,18,14,.9); backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);
+}
+.topbar .marca{ font-family:var(--font-display); font-size:1.15rem; }
+.topbar .marca small{ font-family:var(--font-body); color:var(--steel); font-size:.7rem; letter-spacing:.14em; text-transform:uppercase; display:block; }
+.btn-sair{ background:none; border:1px solid var(--line); color:var(--muted); padding:.45rem .8rem; border-radius:var(--radius-sm); font-size:.85rem; }
+.btn-sair:hover{ color:var(--ink); border-color:var(--steel); }
+
+.tabs{ display:flex; gap:.3rem; overflow-x:auto; padding:.6rem var(--step) 0; border-bottom:1px solid var(--line); }
+.tab{
+  flex:0 0 auto; background:none; border:none; color:var(--muted);
+  padding:.7rem .3rem; margin-right:.9rem; font-size:.95rem;
+  border-bottom:2px solid transparent; transition:color .15s, border-color .15s;
+}
+.tab.active{ color:var(--ink); border-color:var(--brass); }
+
+.tab-panel{ display:none; }
+.tab-panel.show{ display:block; animation:rise .3s ease both; }
+
+/* -------- métricas -------- */
+.metricas{ display:grid; grid-template-columns:repeat(2,1fr); gap:.7rem; margin:1.2rem 0; }
+.metrica{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:1rem; }
+.metrica b{ display:block; font-family:var(--font-display); font-size:2rem; line-height:1; color:var(--brass); }
+.metrica span{ color:var(--muted); font-size:.82rem; }
+.metrica.wide{ grid-column:1 / -1; }
+.metrica.wide b{ font-size:1.2rem; color:var(--ink); }
+
+/* -------- listas / itens -------- */
+.dia-grupo{ margin-top:1.4rem; }
+.dia-grupo h3{
+  font-family:var(--font-body); font-size:.72rem; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--steel); margin:0 0 .6rem;
+}
+.item{
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--radius); padding:.9rem 1rem; margin-bottom:.6rem;
+}
+.item-topo{ display:flex; justify-content:space-between; align-items:baseline; gap:.6rem; }
+.item-hora{ font-family:var(--font-display); font-size:1.3rem; color:var(--ink); }
+.item-cliente{ font-weight:600; }
+.item-sub{ color:var(--muted); font-size:.9rem; margin-top:.15rem; }
+.item-acoes{ display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.8rem; }
+.mini{
+  background:var(--surface-2); border:1px solid var(--line); color:var(--ink);
+  padding:.4rem .7rem; border-radius:var(--radius-sm); font-size:.85rem; text-decoration:none;
+  display:inline-flex; align-items:center; gap:.3rem;
+}
+.mini:hover{ border-color:var(--brass); }
+.mini.perigo:hover{ border-color:var(--danger); color:var(--danger); }
+.mini.zap:hover{ border-color:var(--ok); color:var(--ok); }
+
+.badge{ font-size:.68rem; letter-spacing:.08em; text-transform:uppercase; padding:.18rem .5rem; border-radius:999px; }
+.badge.confirmado{ background:var(--brass-soft); color:var(--brass); }
+.badge.concluido{ background:rgba(123,160,91,.16); color:var(--ok); }
+
+/* edição inline (reagendar) */
+.reagendar{ display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.8rem; align-items:center; }
+.reagendar input{ background:var(--surface-2); color:var(--ink); border:1px solid var(--line); border-radius:var(--radius-sm); padding:.5rem; }
+
+/* -------- serviços (admin) -------- */
+.serv-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:.7rem; margin-top:1.2rem; }
+.serv-card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+.serv-card img, .serv-card .noimg{ width:100%; height:110px; object-fit:cover; background:var(--surface-2); display:grid; place-items:center; color:var(--steel); font-family:var(--font-display); font-size:2rem; }
+.serv-card .corpo{ padding:.8rem; }
+.serv-card h4{ margin:0; font-size:1rem; }
+.serv-card .preco{ font-family:var(--font-display); color:var(--brass); font-weight:600; }
+.serv-card.off{ opacity:.55; }
+.serv-card .acoes{ display:flex; gap:.4rem; margin-top:.7rem; }
+
+/* -------- formulários / seções -------- */
+.secao-topo{ display:flex; justify-content:space-between; align-items:center; margin-top:.4rem; }
+.secao-topo h2{ font-family:var(--font-display); font-weight:500; font-size:1.3rem; margin:0; }
+.form-box{ display:none; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:1.2rem; margin-top:1rem; }
+.form-box.show{ display:block; }
+.form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:.8rem; }
+.form-grid .full{ grid-column:1 / -1; }
+.check{ display:flex; align-items:center; gap:.5rem; color:var(--muted); }
+.check input{ width:auto; }
+
+.vazio{ color:var(--muted); padding:1.5rem 0; text-align:center; }
+
+@media (min-width:640px){
+  .metricas{ grid-template-columns:repeat(3,1fr); }
+  .metrica.wide{ grid-column:auto; }
+}
+@media (max-width:420px){
+  .form-grid{ grid-template-columns:1fr; }
+}

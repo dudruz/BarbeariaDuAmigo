@@ -5,8 +5,8 @@
 // ============================================================
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-export const SUPABASE_URL      = "https://qqzqhbditohkccgzprsl.supabase.co";     
-export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFxenFoYmRpdG9oa2NjZ3pwcnNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTYzOTIsImV4cCI6MjA5ODQ5MjM5Mn0.dvSvDH7Qp-JXS6mIGcsHsgnfv2Iv9Mhff8euaqWsztI";
+export const SUPABASE_URL      = "https://qqzqhbditohkccgzprsl.supabase.co";     // ex: https://xxxxxxxx.supabase.co
+export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFxenFoYmRpdG9oa2NjZ3pwcnNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTYzOTIsImV4cCI6MjA5ODQ5MjM5Mn0.dvSvDH7Qp-JXS6mIGcsHsgnfv2Iv9Mhff8euaqWsztI";    // chave anon/public
 
 // ---- Ajustes da agenda ----
 export const TZ_OFFSET     = "-03:00";  // America/Sao_Paulo (sem horário de verão)

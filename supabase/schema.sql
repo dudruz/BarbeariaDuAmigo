@@ -167,6 +167,19 @@ alter table agendamentos            enable row level security;
 alter table pagamentos              enable row level security;
 alter table avaliacoes              enable row level security;
 
+-- Idempotência: remove policies antigas antes de recriar. O comando
+-- create policy NÃO tem "if not exists"; sem estes drops, rodar o
+-- schema de novo estoura 42710 ("policy ... already exists").
+drop policy if exists "publico le servicos ativos"       on servicos;
+drop policy if exists "publico le horario funcionamento" on horarios_funcionamento;
+drop policy if exists "publico cria avaliacao"           on avaliacoes;
+drop policy if exists "admin gerencia servicos"          on servicos;
+drop policy if exists "admin gerencia horarios"          on horarios_funcionamento;
+drop policy if exists "admin gerencia bloqueios"         on bloqueios;
+drop policy if exists "admin gerencia agendamentos"      on agendamentos;
+drop policy if exists "admin le pagamentos"              on pagamentos;
+drop policy if exists "admin le avaliacoes"              on avaliacoes;
+
 -- PÚBLICO ----------------------------------------------------
 create policy "publico le servicos ativos"
   on servicos for select to anon, authenticated
@@ -208,6 +221,11 @@ insert into storage.buckets (id, name, public)
 values ('servicos', 'servicos', true)
 on conflict (id) do nothing;
 
+drop policy if exists "imagens de servico publicas (leitura)" on storage.objects;
+drop policy if exists "admin sobe imagem de servico"          on storage.objects;
+drop policy if exists "admin atualiza imagem de servico"      on storage.objects;
+drop policy if exists "admin apaga imagem de servico"         on storage.objects;
+
 create policy "imagens de servico publicas (leitura)"
   on storage.objects for select to anon, authenticated
   using (bucket_id = 'servicos');
@@ -228,15 +246,24 @@ create policy "admin apaga imagem de servico"
 --  SEED (exemplo — edite/apague à vontade)
 -- ============================================================
 -- Horário puxado do Google: Ter–Sáb 9:00–19:30 (Seg/Dom fechado).
-insert into horarios_funcionamento (dia_semana, abre, fecha) values
-  (2, '09:00', '19:30'),
-  (3, '09:00', '19:30'),
-  (4, '09:00', '19:30'),
-  (5, '09:00', '19:30'),
-  (6, '09:00', '19:30');
+-- Só insere se a tabela estiver vazia (pra não duplicar no rerun).
+insert into horarios_funcionamento (dia_semana, abre, fecha)
+select v.dia, v.abre, v.fecha
+from (values
+  (2, time '09:00', time '19:30'),
+  (3, time '09:00', time '19:30'),
+  (4, time '09:00', time '19:30'),
+  (5, time '09:00', time '19:30'),
+  (6, time '09:00', time '19:30')
+) as v(dia, abre, fecha)
+where not exists (select 1 from horarios_funcionamento);
 
 -- Serviços de exemplo pra testar a Fase 2 (preços/imagens você ajusta no painel).
-insert into servicos (nome, duracao_min, preco) values
+insert into servicos (nome, duracao_min, preco)
+select v.nome, v.dur, v.preco
+from (values
   ('Corte',          40, 40.00),
   ('Barba',          30, 30.00),
-  ('Corte + Barba',  60, 60.00);
+  ('Corte + Barba',  60, 60.00)
+) as v(nome, dur, preco)
+where not exists (select 1 from servicos);
