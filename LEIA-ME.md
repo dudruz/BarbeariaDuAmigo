@@ -1,42 +1,100 @@
-# Corte Dú Amigo — Sistema de Agendamento
+# DUIM Barber — site + agendamento + painel
 
-Frontend estático (GitHub Pages) + Supabase + Edge Function pra criar o agendamento.
-Pagamento é presencial (InfinitePay) depois do corte — isso entra na Fase 4.
+Projeto modernizado mantendo a estrutura original de arquivos:
 
-## Estrutura
+```txt
+DUIM/
+├── index.html
+├── assets/
+│   ├── css/px.css
+│   └── js/
+│       ├── supabase.js
+│       └── agenda.js
+├── admin/
+│   ├── index.html
+│   ├── css/admin.css
+│   └── js/admin.js
+└── supabase/
+    ├── schema.sql
+    └── functions/criar-agendamento/index.ts
 ```
-index.html ............................ página do cliente (agendar)
-assets/css/px.css ..................... estilos (identidade da barbearia)
-assets/js/supabase.js ................. config — COLE suas chaves aqui
-assets/js/agenda.js ................... lógica do agendamento
-admin/index.html ...................... painel do Duin (login + abas)
-admin/css/admin.css ................... estilos do painel
-admin/js/admin.js ..................... lógica do painel
-supabase/schema.sql ................... banco (rode no SQL Editor) — Fase 1
-supabase/functions/criar-agendamento/ . Edge Function que grava o horário
+
+## O que foi adicionado
+
+- Design novo, moderno e mobile-first.
+- Página inicial com chamadas diretas para agendar, loja, localização, WhatsApp e avaliação no Google.
+- Agendamento com horários disponíveis, ocupados e bloqueados com visual diferente.
+- Mensagem correta para folgas/bloqueios, sem mostrar “agenda cheia” quando o dia foi bloqueado.
+- Pagamento de serviços apenas presencial.
+- Loja em formato de catálogo, sem checkout e sem pagamento online ativo.
+- Produtos com nome, foto, descrição, preço, categoria, estoque/disponibilidade e botão de WhatsApp.
+- Painel administrativo com dashboard, financeiro manual, agenda, loja, horários de funcionamento, folgas e configurações.
+- Segurança planejada no Supabase com `admin_users`, função `is_admin()` e RLS.
+- Edge Function `criar-agendamento` para criar agendamentos com validação no servidor.
+
+## Como configurar o Supabase
+
+1. Abra o Supabase do projeto.
+2. Vá em **SQL Editor**.
+3. Rode o arquivo:
+
+```txt
+supabase/schema.sql
 ```
 
-## Passo a passo
-1. **Banco:** Supabase → SQL Editor → cole e rode `supabase/schema.sql`.
-2. **Login do Duin:** Authentication → Users → Add user. É ele quem vai entrar no painel (Fase 3).
-3. **Function:** `supabase functions deploy criar-agendamento`
-   (as secrets `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` já vêm injetadas).
-4. **Chaves no front:** em `assets/js/supabase.js`, troque `COLE_AQUI_URL` e `COLE_AQUI_ANON`
-   (Settings → API). A anon key é pública, pode ir pro Pages.
-5. **Deploy:** suba a pasta no GitHub Pages.
-6. **Produção:** troque o `"*"` do CORS na Function pelo domínio do Pages.
+4. Cadastre o e-mail autorizado do dono/painel:
 
-## Testes rápidos
-- Marca um horário e recarrega → o slot tem que aparecer riscado (ocupado).
-- Abre duas abas e tenta marcar o mesmo horário junto → só **uma** confirma; a outra recebe
-  "esse horário acabou de ser preenchido" (é a constraint `EXCLUDE` fazendo o trabalho).
-- Deixa a aba aberta → a disponibilidade recarrega sozinha a cada 15s.
+```sql
+insert into public.admin_users (email, name)
+values ('email-do-duim@exemplo.com', 'Duim');
+```
 
-## Painel do Duin (Fase 3)
-Abra **`/admin/`** (ex.: `https://.../admin/`) e entre com o e-mail/senha criado no Auth (passo 2).
-Abas: **Dashboard** (nº de hoje/semana, próximo cliente, avaliações), **Agenda**
-(concluir / reagendar / cancelar + WhatsApp do cliente), **Serviços** (criar/editar/excluir
-com foto) e **Pausas** (bloquear almoço/folga/feriado).
+5. Abra o arquivo:
 
-## Ainda vem
-- **Fase 4 — Pagamento:** cobrança InfinitePay pós-corte + webhook marcando `pago`.
+```txt
+assets/js/supabase.js
+```
+
+6. Preencha:
+
+```js
+export const SUPABASE_URL = 'https://SEU-PROJETO.supabase.co';
+export const SUPABASE_ANON_KEY = 'SUA_ANON_KEY';
+```
+
+7. Ajuste também no mesmo arquivo:
+
+```js
+whatsapp: '5531999999999',
+address: 'Endereço real da barbearia',
+googleMapsUrl: 'link do Google Maps',
+googleReviewUrl: 'link de avaliação do Google'
+```
+
+## Como publicar a Edge Function
+
+Pelo Supabase CLI:
+
+```bash
+supabase functions deploy criar-agendamento
+```
+
+A função usa `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY`, que normalmente já existem no ambiente das Edge Functions do Supabase.
+
+## Importante sobre segurança
+
+O painel não deve depender apenas do frontend. O arquivo `schema.sql` cria:
+
+- tabela `admin_users`;
+- função `public.is_admin()`;
+- políticas RLS para limitar dados administrativos;
+- bloqueio de leitura pública dos dados pessoais dos agendamentos;
+- view pública `public_agenda_ocupada`, que mostra somente data, horário, duração e status para o site bloquear horários.
+
+## Modo demonstração
+
+Se o Supabase ainda não estiver configurado, o site e o painel exibem dados de exemplo usando `localStorage`. Isso é apenas para visualizar o design e testar o fluxo. Para produção, configure o Supabase e rode o schema.
+
+## Observação sobre o arquivo RAR original
+
+O pacote enviado estava em RAR5 comprimido. O ambiente atual não tinha extrator RAR disponível, então esta entrega foi reconstruída na mesma estrutura detectada no pacote original, preservando os caminhos esperados do projeto.

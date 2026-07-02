@@ -1,104 +1,223 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Corte Dú Amigo — Agende seu horário</title>
-  <meta name="description" content="Agende seu corte na Barbearia Corte Dú Amigo, em Minaslândia, Belo Horizonte. Escolha o serviço, o dia e o horário.">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0c0b09" />
+  <meta name="description" content="Agende seu corte na DUIM Barber, veja serviços, produtos e localização da barbearia." />
+  <title>DUIM Barber | Agendamento e Catálogo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/px.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/px.css" />
 </head>
 <body>
-
-  <header class="top wrap">
-    <p class="eyebrow">Minaslândia · Belo Horizonte</p>
-    <p class="brand">Corte Dú&nbsp;Amigo</p>
+  <a class="skip-link" href="#agenda">Ir para agendamento</a>
+  <header class="topbar" id="topo">
+    <div class="container topbar-inner">
+      <a class="brand" href="#topo" aria-label="Página inicial DUIM Barber">
+        <span class="brand-mark">D</span>
+        <span class="brand-copy"><strong>DUIM Barber</strong><span>Agenda • Estilo • Catálogo</span></span>
+      </a>
+      <nav class="nav-desktop" aria-label="Navegação principal">
+        <a href="#servicos">Serviços</a>
+        <a href="#agenda">Agendar</a>
+        <a href="#loja">Loja</a>
+        <a href="#localizacao">Localização</a>
+        <a href="admin/" class="desktop-only">Painel</a>
+      </nav>
+      <a class="btn btn-primary desktop-only" id="headerWhats" href="#" target="_blank" rel="noopener">WhatsApp</a>
+      <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu" aria-expanded="false">☰</button>
+    </div>
   </header>
 
-  <section class="hero wrap">
-    <h1>Agende seu horário com o Duin.</h1>
-    <p>Escolha o serviço, o dia e o horário. Você paga na barbearia, depois do corte.</p>
-    <a class="chip" href="https://search.google.com/local/writereview?placeid=ChIJf_G04ZeapgARG7gkWs3lhf8" target="_blank" rel="noopener">★ 5,0 no Google</a>
-  </section>
+  <nav class="mobile-drawer" id="mobileDrawer" aria-label="Menu mobile">
+    <a href="#servicos">Serviços</a>
+    <a href="#agenda">Agendar horário</a>
+    <a href="#loja">Ver loja</a>
+    <a href="#localizacao">Localização</a>
+    <a href="admin/">Painel administrativo</a>
+    <a href="#" id="drawerWhats" class="cta" target="_blank" rel="noopener">Chamar no WhatsApp</a>
+  </nav>
 
-  <main class="wrap">
-    <ol class="stepper">
-      <li id="step-1" class="active"><span><b>01</b> Serviço</span></li>
-      <li id="step-2"><span><b>02</b> Dia e horário</span></li>
-      <li id="step-3"><span><b>03</b> Confirmar</span></li>
-    </ol>
-
-    <!-- 01 · serviço -->
-    <section id="s1" class="step show" aria-labelledby="t1">
-      <h2 id="t1">Escolha o serviço</h2>
-      <div id="servicos" class="servicos"><p class="slots-vazio">Carregando serviços…</p></div>
-    </section>
-
-    <!-- 02 · dia e horário -->
-    <section id="s2" class="step" aria-labelledby="t2">
-      <h2 id="t2">Escolha o dia e o horário</h2>
-      <div id="dias" class="dias"></div>
-      <div id="slots" class="slots"></div>
-      <p id="slots-vazio" class="slots-vazio">Escolha um serviço para ver os horários.</p>
-    </section>
-
-    <!-- 03 · confirmar -->
-    <section id="s3" class="step" aria-labelledby="t3">
-      <h2 id="t3">Confirme seus dados</h2>
-      <dl class="resumo">
-        <dt>Serviço</dt><dd id="r-servico">—</dd>
-        <dt>Valor</dt><dd id="r-preco">—</dd>
-        <dt>Horário</dt><dd id="r-horario">—</dd>
-      </dl>
-      <div class="campo">
-        <label for="f-nome">Seu nome</label>
-        <input id="f-nome" type="text" autocomplete="name" placeholder="Como o Duin te chama?">
-      </div>
-      <div class="campo">
-        <label for="f-whats">WhatsApp (com DDD)</label>
-        <input id="f-whats" type="tel" inputmode="numeric" autocomplete="tel" placeholder="31 9 9999-9999">
-      </div>
-      <button id="btn-confirmar" class="btn" type="button">Confirmar horário</button>
-    </section>
-
-    <!-- sucesso -->
-    <section id="sucesso" class="step sucesso" aria-live="polite">
-      <div class="selo" aria-hidden="true">✓</div>
-      <h2>Horário confirmado, <span id="suc-nome">amigo</span>!</h2>
-      <p class="destaque" id="suc-horario">—</p>
-      <p id="suc-servico">—</p>
-      <p>Te esperamos na barbearia. É só chegar no horário.</p>
-
-      <div class="review" id="review-form">
-        <p class="eyebrow">Depois do corte, conta pra gente</p>
-        <div class="estrelas" role="group" aria-label="Sua nota de 1 a 5">
-          <button class="estrela" type="button" data-n="1" aria-label="1 estrela">★</button>
-          <button class="estrela" type="button" data-n="2" aria-label="2 estrelas">★</button>
-          <button class="estrela" type="button" data-n="3" aria-label="3 estrelas">★</button>
-          <button class="estrela" type="button" data-n="4" aria-label="4 estrelas">★</button>
-          <button class="estrela" type="button" data-n="5" aria-label="5 estrelas">★</button>
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy reveal">
+          <span class="eyebrow">Agendamento rápido e pagamento presencial</span>
+          <h1 class="hero-title">Seu corte <span>no horário certo.</span></h1>
+          <p>Escolha o serviço, selecione um horário disponível e confirme em poucos cliques. A loja está em formato de catálogo para você conhecer os produtos da barbearia.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#agenda">Agendar agora</a>
+            <a class="btn btn-secondary" href="#loja">Ver produtos</a>
+          </div>
+          <div class="hero-note">
+            <span aria-hidden="true">💈</span>
+            <p><strong>Pagamento dos serviços presencial.</strong><br>Você paga diretamente na barbearia no momento do atendimento.</p>
+          </div>
         </div>
-        <textarea id="f-comentario" placeholder="O que você achou? (opcional)"></textarea>
-        <button id="btn-feedback" class="btn btn-ghost" type="button" style="margin-top:.7rem">Enviar feedback</button>
+        <div class="hero-card reveal" aria-label="Barbearia moderna">
+          <div class="hero-badge">
+            <div class="hero-badge-main">
+              <strong>Agenda simples no celular</strong>
+              <span>Horários claros, bloqueios corretos e contato direto.</span>
+            </div>
+            <div class="quick-stats">
+              <div class="stat"><strong>Mobile</strong><span>primeiro</span></div>
+              <div class="stat"><strong>Catálogo</strong><span>sem checkout</span></div>
+              <div class="stat"><strong>Seguro</strong><span>admin liberado</span></div>
+            </div>
+          </div>
+        </div>
       </div>
+    </section>
 
-      <a class="google-btn" href="https://search.google.com/local/writereview?placeid=ChIJf_G04ZeapgARG7gkWs3lhf8" target="_blank" rel="noopener">
-        ★ Avaliar no Google
-      </a>
+    <section class="section compact" id="atalhos">
+      <div class="container grid cards-3">
+        <a class="card reveal" href="#agenda"><span class="card-icon">📅</span><h3>Agende em segundos</h3><p>Escolha serviço, dia e horário com botões grandes e fáceis de tocar.</p></a>
+        <a class="card reveal" href="#localizacao"><span class="card-icon">📍</span><h3>Chegue fácil</h3><p>Endereço organizado, mapa e botão para abrir direto no Google Maps.</p></a>
+        <a class="card reveal" href="#avaliar"><span class="card-icon">⭐</span><h3>Avalie no Google</h3><p>Sem avaliações falsas no site. Feedback real direto no perfil da barbearia.</p></a>
+      </div>
+    </section>
+
+    <section class="section" id="servicos">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Serviços</span>
+          <h2>Escolha seu atendimento</h2>
+          <p>Os serviços são carregados do Supabase quando configurado. Se o banco ainda não estiver conectado, o site exibe exemplos seguros para visualização.</p>
+        </div>
+        <div class="grid cards-3" id="servicesGrid" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="section" id="agenda">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Agenda online</span>
+          <h2>Reserve seu horário</h2>
+          <p>Horários fora do funcionamento, ocupados ou bloqueados ficam indisponíveis. Folgas têm mensagem própria, sem confundir com agenda cheia.</p>
+        </div>
+
+        <div class="scheduler-shell">
+          <form class="card form-card reveal" id="bookingForm">
+            <div class="input-row">
+              <div class="field">
+                <label for="clientName">Nome</label>
+                <input class="input" id="clientName" name="clientName" autocomplete="name" required placeholder="Seu nome" />
+              </div>
+              <div class="field">
+                <label for="clientPhone">WhatsApp</label>
+                <input class="input" id="clientPhone" name="clientPhone" inputmode="tel" autocomplete="tel" required placeholder="(31) 99999-9999" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="serviceSelect">Serviço</label>
+              <select class="select" id="serviceSelect" name="serviceSelect" required></select>
+            </div>
+            <div class="input-row">
+              <div class="field">
+                <label for="dateInput">Data</label>
+                <input class="input" type="date" id="dateInput" name="dateInput" required />
+              </div>
+              <div class="field">
+                <label for="selectedTime">Horário selecionado</label>
+                <input class="input" id="selectedTime" name="selectedTime" readonly required placeholder="Toque em um horário" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="notes">Observação opcional</label>
+              <textarea class="textarea" id="notes" name="notes" placeholder="Ex.: corte baixo, barba completa..."></textarea>
+            </div>
+            <div class="payment-info"><span>💳</span><p><strong>Pagamento presencial:</strong> serviços são pagos diretamente na barbearia no atendimento.</p></div>
+            <button class="btn btn-primary btn-full" type="submit">Confirmar agendamento</button>
+          </form>
+
+          <aside class="card slots-panel reveal">
+            <div class="slot-date-nav">
+              <button type="button" id="prevDay" aria-label="Dia anterior">‹</button>
+              <div><strong id="slotDateTitle">Horários</strong><p id="slotDateSubtitle">Selecione uma data</p></div>
+              <button type="button" id="nextDay" aria-label="Próximo dia">›</button>
+            </div>
+            <div id="dayMessage" class="day-message" hidden></div>
+            <div class="slots-grid" id="slotsGrid" aria-live="polite"></div>
+            <div class="chip-row">
+              <span class="chip ok">Livre</span>
+              <span class="chip">Ocupado</span>
+              <span class="chip danger">Bloqueado/folga</span>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="loja">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Loja catálogo</span>
+          <h2>Produtos da barbearia</h2>
+          <p>A loja está como vitrine. Sem checkout, carrinho ou pagamento online ativo neste momento.</p>
+        </div>
+        <div class="catalog-tools reveal">
+          <div class="category-tabs" id="categoryTabs" aria-label="Categorias de produtos"></div>
+        </div>
+        <div class="grid cards-3" id="productsGrid" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="section" id="localizacao">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Localização</span>
+          <h2>Venha para a DUIM Barber</h2>
+        </div>
+        <div class="card location-card reveal">
+          <iframe class="map-frame" id="mapFrame" title="Mapa da barbearia" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+          <div class="address-card">
+            <span class="card-icon">📍</span>
+            <h3 id="businessAddressTitle">Endereço da barbearia</h3>
+            <p id="businessAddress">Configure o endereço real no painel ou no Supabase.</p>
+            <div class="chip-row">
+              <a class="btn btn-primary" id="mapsButton" href="#" target="_blank" rel="noopener">Abrir no Google Maps</a>
+              <a class="btn btn-secondary" id="locationWhats" href="#" target="_blank" rel="noopener">Chamar no WhatsApp</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="avaliar">
+      <div class="container">
+        <div class="card review-card reveal">
+          <span class="big-icon">⭐</span>
+          <div>
+            <span class="eyebrow">Feedback real</span>
+            <h2>Avalie nossa barbearia no Google</h2>
+            <p>Sua avaliação ajuda outros clientes a conhecerem o atendimento. Removemos blocos falsos de estrelas e deixamos o feedback direto no Google.</p>
+          </div>
+          <a class="btn btn-primary" id="reviewButton" href="#" target="_blank" rel="noopener">Avaliar no Google</a>
+        </div>
+      </div>
     </section>
   </main>
 
-  <footer class="rodape wrap">
-    <strong>Barbearia Corte Dú Amigo</strong>
-    R. Santa Clara de Assis, 20 — Minaslândia, BH<br>
-    Ter a Sáb · 9h às 19h30 &nbsp;·&nbsp;
-    <a href="https://www.google.com/maps/search/?api=1&query=Barbearia%20Corte%20D%C3%BA%20Amigo&query_place_id=ChIJf_G04ZeapgARG7gkWs3lhf8" target="_blank" rel="noopener">Ver no mapa</a>
-  </footer>
+  <div class="floating-actions" aria-label="Ações rápidas">
+    <a class="fab whatsapp" id="floatWhats" href="#" target="_blank" rel="noopener" aria-label="Chamar no WhatsApp">☎</a>
+    <a class="fab top" href="#topo" aria-label="Voltar ao topo">↑</a>
+  </div>
 
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <nav class="bottom-nav" aria-label="Navegação inferior mobile">
+    <a href="#topo" class="active"><span>⌂</span><small>Início</small></a>
+    <a href="#servicos"><span>✂</span><small>Serviços</small></a>
+    <a href="#agenda"><span>＋</span><small>Agendar</small></a>
+    <a href="#loja"><span>◼</span><small>Loja</small></a>
+    <a href="#localizacao"><span>⌖</span><small>Mapa</small></a>
+  </nav>
 
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module" src="assets/js/supabase.js"></script>
   <script type="module" src="assets/js/agenda.js"></script>
 </body>
 </html>

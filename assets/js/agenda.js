@@ -1,298 +1,505 @@
-// ============================================================
-//  Corte Dú Amigo — agenda.js
-//  Fluxo do cliente: serviço → dia/horário → confirmar.
-//  Disponibilidade vem da RPC horarios_ocupados (sem PII);
-//  o insert vai pela Edge Function criar-agendamento.
-// ============================================================
 import {
-  supabase, SUPABASE_ANON_KEY, EF_CRIAR_AGENDAMENTO,
-  TZ_OFFSET, SLOT_STEP_MIN, DIAS_A_FRENTE, POLL_MS,
-} from "./supabase.js";
+  APP_CONFIG,
+  MOCK_PRODUCTS,
+  MOCK_SERVICES,
+  MOCK_WORKING_HOURS,
+  formatCurrency,
+  getSupabaseClient,
+  isSupabaseReady,
+  whatsappLink
+} from './supabase.js';
 
-const DOW = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-
+const db = getSupabaseClient();
 const state = {
-  servicos: [],
-  horarios: {},     // dia_semana -> { abre:"09:00:00", fecha:"19:30:00" }
-  servico: null,
-  dia: null,        // "YYYY-MM-DD"
-  slot: null,       // { hm, inicioISO }
-  ocupados: [],     // [{ inicio:ms, fim:ms }]
-  agendamento: null,
+  services: [],
+  products: [],
+  workingHours: [],
+  busySlots: [],
+  blocks: [],
+  selectedDate: new Date(),
+  selectedSlot: '',
+  selectedCategory: 'Todos'
 };
 
-// ---------- helpers de data (math por data pura, estável) ----------
-const el = (id) => document.getElementById(id);
-const brl = (n) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const hmToMin = (t) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
-const minToHM = (min) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
-function hojeSP() {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit",
-  }).format(new Date());
-}
-function addDias(iso, n) {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
-}
-function dowOf(iso) {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
-}
-function ddmm(iso) { const [, m, d] = iso.split("-"); return `${d}/${m}`; }
+const els = {
+  servicesGrid: $('#servicesGrid'),
+  serviceSelect: $('#serviceSelect'),
+  productsGrid: $('#productsGrid'),
+  categoryTabs: $('#categoryTabs'),
+  dateInput: $('#dateInput'),
+  selectedTime: $('#selectedTime'),
+  slotsGrid: $('#slotsGrid'),
+  dayMessage: $('#dayMessage'),
+  slotDateTitle: $('#slotDateTitle'),
+  slotDateSubtitle: $('#slotDateSubtitle'),
+  bookingForm: $('#bookingForm'),
+  toast: $('#toast'),
+  menuToggle: $('#menuToggle'),
+  mobileDrawer: $('#mobileDrawer'),
+  prevDay: $('#prevDay'),
+  nextDay: $('#nextDay')
+};
 
-// ---------- toast ----------
-let toastT;
-function toast(msg) {
-  const t = el("toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  clearTimeout(toastT);
-  toastT = setTimeout(() => t.classList.remove("show"), 4200);
+init();
+
+async function init() {
+  setupMenu();
+  setupReveal();
+  setupBottomNav();
+  setupDateInput();
+  setupListeners();
+  await loadInitialData();
+  setupStaticLinks();
+  renderAll();
 }
 
-// ---------- stepper / navegação ----------
-function setStep(n) {
-  ["s1", "s2", "s3"].forEach((id, i) => el(id).classList.toggle("show", i + 1 <= n));
-  [1, 2, 3].forEach((i) => {
-    const li = el(`step-${i}`);
-    li.classList.toggle("active", i === n);
-    li.classList.toggle("done", i < n);
+function setupStaticLinks() {
+  const defaultWhatsapp = whatsappLink('Olá, vim pelo site e gostaria de atendimento.');
+  ['headerWhats', 'drawerWhats', 'floatWhats', 'locationWhats'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.href = defaultWhatsapp;
   });
-  if (n > 1) el(`s${n}`).scrollIntoView({ behavior: "smooth", block: "start" });
-}
 
-// ---------- carregar dados ----------
-async function carregar() {
-  const [serv, hora] = await Promise.all([
-    supabase.from("servicos").select("*").eq("ativo", true).order("preco"),
-    supabase.from("horarios_funcionamento").select("*").eq("ativo", true),
-  ]);
-  if (serv.error || hora.error) { toast("Não consegui carregar a barbearia. Recarregue a página."); return; }
+  const address = APP_CONFIG.address;
+  const mapUrl = APP_CONFIG.googleMapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+  const mapFrame = document.getElementById('mapFrame');
+  const mapsButton = document.getElementById('mapsButton');
+  const reviewButton = document.getElementById('reviewButton');
+  const addressEl = document.getElementById('businessAddress');
 
-  state.servicos = serv.data ?? [];
-  (hora.data ?? []).forEach((h) => { state.horarios[h.dia_semana] = { abre: h.abre, fecha: h.fecha }; });
-
-  renderServicos();
-  renderDias();
-}
-
-// ---------- serviços ----------
-function renderServicos() {
-  const box = el("servicos");
-  if (!state.servicos.length) { box.innerHTML = `<p class="slots-vazio">Nenhum serviço disponível no momento.</p>`; return; }
-  box.innerHTML = "";
-  state.servicos.forEach((s) => {
-    const b = document.createElement("button");
-    b.className = "servico";
-    b.type = "button";
-    b.setAttribute("aria-pressed", "false");
-    const img = s.imagem_url
-      ? `<img class="servico-img" src="${s.imagem_url}" alt="">`
-      : `<span class="servico-img" aria-hidden="true">${s.nome.trim()[0] ?? "✂"}</span>`;
-    b.innerHTML = `
-      ${img}
-      <span class="servico-info">
-        <strong>${s.nome}</strong>
-        <span class="servico-meta">${s.duracao_min} min</span>
-      </span>
-      <span class="servico-preco">${brl(Number(s.preco))}</span>`;
-    b.addEventListener("click", () => escolherServico(s, b));
-    box.appendChild(b);
-  });
-}
-function escolherServico(s, btn) {
-  state.servico = s;
-  state.slot = null;
-  document.querySelectorAll(".servico").forEach((x) => x.setAttribute("aria-pressed", "false"));
-  btn.setAttribute("aria-pressed", "true");
-  setStep(2);
-  if (!state.dia) { const d = el("dias").querySelector(".dia"); if (d) d.click(); }
-  else loadSlots();
-}
-
-// ---------- dias ----------
-function renderDias() {
-  const box = el("dias");
-  box.innerHTML = "";
-  let iso = hojeSP(), mostrados = 0, tentativas = 0;
-  while (mostrados < DIAS_A_FRENTE && tentativas < 40) {
-    if (state.horarios[dowOf(iso)]) {
-      const cur = iso;
-      const b = document.createElement("button");
-      b.className = "dia";
-      b.type = "button";
-      b.setAttribute("aria-pressed", "false");
-      b.innerHTML = `<small>${DOW[dowOf(cur)]}</small><b>${cur.split("-")[2]}</b>`;
-      b.addEventListener("click", () => escolherDia(cur, b));
-      box.appendChild(b);
-      mostrados++;
-    }
-    iso = addDias(iso, 1); tentativas++;
+  if (addressEl) addressEl.textContent = address;
+  if (mapsButton) mapsButton.href = mapUrl;
+  if (reviewButton) reviewButton.href = APP_CONFIG.googleReviewUrl;
+  if (mapFrame) {
+    const query = encodeURIComponent(address || 'barbearia');
+    mapFrame.src = `https://www.google.com/maps?q=${query}&output=embed`;
   }
-  if (!mostrados) box.innerHTML = `<p class="slots-vazio">Sem horário de funcionamento cadastrado.</p>`;
-}
-function escolherDia(iso, btn) {
-  state.dia = iso;
-  state.slot = null;
-  document.querySelectorAll(".dia").forEach((x) => x.setAttribute("aria-pressed", "false"));
-  btn.setAttribute("aria-pressed", "true");
-  loadSlots();
 }
 
-// ---------- horários ----------
-async function loadSlots() {
-  if (!state.servico || !state.dia) return;
-  const vazio = el("slots-vazio");
-  vazio.textContent = "Carregando horários…";
-  el("slots").innerHTML = "";
+function setupMenu() {
+  els.menuToggle?.addEventListener('click', () => {
+    const open = !els.mobileDrawer.classList.contains('open');
+    els.mobileDrawer.classList.toggle('open', open);
+    document.body.classList.toggle('menu-open', open);
+    els.menuToggle.setAttribute('aria-expanded', String(open));
+  });
 
-  const { data, error } = await supabase.rpc("horarios_ocupados", { dia: state.dia });
-  if (error) { vazio.textContent = "Não consegui carregar os horários. Tente de novo."; return; }
-  state.ocupados = (data ?? []).map((o) => ({ inicio: +new Date(o.inicio), fim: +new Date(o.fim) }));
+  els.mobileDrawer?.querySelectorAll('a').forEach((link) => {
+    link.addEventListener('click', () => {
+      els.mobileDrawer.classList.remove('open');
+      document.body.classList.remove('menu-open');
+      els.menuToggle?.setAttribute('aria-expanded', 'false');
+    });
+  });
+}
+
+function setupReveal() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) entry.target.classList.add('visible');
+    });
+  }, { threshold: 0.12 });
+  $$('.reveal').forEach((el) => observer.observe(el));
+}
+
+function setupBottomNav() {
+  const navLinks = $$('.bottom-nav a, .nav-desktop a');
+  const sections = ['topo', 'servicos', 'agenda', 'loja', 'localizacao'].map((id) => document.getElementById(id)).filter(Boolean);
+  const observer = new IntersectionObserver((entries) => {
+    const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+    if (!visible) return;
+    navLinks.forEach((link) => link.classList.toggle('active', link.getAttribute('href') === `#${visible.target.id}`));
+  }, { threshold: [0.25, 0.45, 0.65] });
+  sections.forEach((section) => observer.observe(section));
+}
+
+function setupDateInput() {
+  const today = toDateInputValue(new Date());
+  els.dateInput.min = today;
+  els.dateInput.value = today;
+  state.selectedDate = parseDateInput(today);
+}
+
+function setupListeners() {
+  els.serviceSelect?.addEventListener('change', () => {
+    state.selectedSlot = '';
+    els.selectedTime.value = '';
+    renderSlots();
+  });
+
+  els.dateInput?.addEventListener('change', async () => {
+    state.selectedDate = parseDateInput(els.dateInput.value);
+    state.selectedSlot = '';
+    els.selectedTime.value = '';
+    await loadDayData();
+    renderSlots();
+  });
+
+  els.prevDay?.addEventListener('click', () => shiftDay(-1));
+  els.nextDay?.addEventListener('click', () => shiftDay(1));
+  els.bookingForm?.addEventListener('submit', submitBooking);
+}
+
+async function loadInitialData() {
+  await Promise.all([loadSettings(), loadServices(), loadProducts(), loadWorkingHours()]);
+  await loadDayData();
+}
+
+
+async function loadSettings() {
+  if (!db) return;
+  const { data, error } = await db.from('business_settings').select('*').eq('id', 1).maybeSingle();
+  if (error || !data) return;
+  APP_CONFIG.businessName = data.business_name || APP_CONFIG.businessName;
+  APP_CONFIG.whatsapp = data.whatsapp || APP_CONFIG.whatsapp;
+  APP_CONFIG.address = data.address || APP_CONFIG.address;
+  APP_CONFIG.googleMapsUrl = data.google_maps_url || APP_CONFIG.googleMapsUrl;
+  APP_CONFIG.googleReviewUrl = data.google_review_url || APP_CONFIG.googleReviewUrl;
+}
+
+async function loadServices() {
+  if (!db) {
+    state.services = MOCK_SERVICES;
+    return;
+  }
+  const { data, error } = await db.from('services').select('*').eq('active', true).order('position', { ascending: true });
+  state.services = error || !data?.length ? MOCK_SERVICES : data;
+}
+
+async function loadProducts() {
+  if (!db) {
+    state.products = MOCK_PRODUCTS;
+    return;
+  }
+  const { data, error } = await db.from('products').select('*').eq('active', true).order('created_at', { ascending: false });
+  state.products = error || !data?.length ? MOCK_PRODUCTS : data;
+}
+
+async function loadWorkingHours() {
+  if (!db) {
+    state.workingHours = MOCK_WORKING_HOURS;
+    return;
+  }
+  const { data, error } = await db.from('working_hours').select('*').order('weekday', { ascending: true });
+  state.workingHours = error || !data?.length ? MOCK_WORKING_HOURS : data;
+}
+
+async function loadDayData() {
+  const date = toDateInputValue(state.selectedDate);
+  if (!db) {
+    state.busySlots = JSON.parse(localStorage.getItem('duim_busy_slots') || '[]').filter((item) => item.date === date);
+    state.blocks = JSON.parse(localStorage.getItem('duim_blocks') || '[]').filter((item) => item.date === date && item.active !== false);
+    return;
+  }
+
+  const [busyRes, blocksRes] = await Promise.all([
+    db.from('public_agenda_ocupada').select('*').eq('appointment_date', date),
+    db.from('schedule_blocks').select('*').eq('block_date', date).eq('active', true)
+  ]);
+
+  state.busySlots = busyRes.error ? [] : (busyRes.data || []);
+  state.blocks = blocksRes.error ? [] : (blocksRes.data || []);
+}
+
+function renderAll() {
+  renderServices();
+  renderProducts();
   renderSlots();
 }
-function gerarSlots() {
-  const janela = state.horarios[dowOf(state.dia)];
-  if (!janela) return [];
-  const dur = state.servico.duracao_min;
-  const abre = hmToMin(janela.abre), fecha = hmToMin(janela.fecha);
-  const agora = Date.now();
-  const out = [];
-  for (let t = abre; t + dur <= fecha; t += SLOT_STEP_MIN) {
-    const hm = minToHM(t);
-    const inicioISO = `${state.dia}T${hm}:00${TZ_OFFSET}`;
-    const ini = +new Date(inicioISO), fim = ini + dur * 60000;
-    const ocupado = state.ocupados.some((o) => ini < o.fim && fim > o.inicio);
-    out.push({ hm, inicioISO, disponivel: ini > agora && !ocupado });
-  }
-  return out;
+
+function renderServices() {
+  els.servicesGrid.innerHTML = state.services.map((service) => `
+    <article class="card service-card reveal visible">
+      <div class="service-top">
+        <div>
+          <h3>${escapeHtml(service.name)}</h3>
+          <p>${escapeHtml(service.description || 'Atendimento profissional com acabamento de qualidade.')}</p>
+        </div>
+        <strong class="price">${formatCurrency(service.price)}</strong>
+      </div>
+      <div class="chip-row">
+        <span class="chip ok">${Number(service.duration_minutes || 30)} min</span>
+        <span class="chip warn">Pagamento presencial</span>
+      </div>
+      <a class="btn btn-secondary" href="#agenda" data-service-id="${service.id}">Agendar este serviço</a>
+    </article>
+  `).join('');
+
+  els.serviceSelect.innerHTML = state.services.map((service) => `
+    <option value="${service.id}">${escapeHtml(service.name)} • ${formatCurrency(service.price)} • ${Number(service.duration_minutes || 30)}min</option>
+  `).join('');
+
+  els.servicesGrid.querySelectorAll('[data-service-id]').forEach((button) => {
+    button.addEventListener('click', () => {
+      els.serviceSelect.value = button.dataset.serviceId;
+      renderSlots();
+    });
+  });
 }
+
+function renderProducts() {
+  const categories = ['Todos', ...new Set(state.products.map((p) => p.category).filter(Boolean))];
+  els.categoryTabs.innerHTML = categories.map((cat) => `
+    <button class="tab-btn ${cat === state.selectedCategory ? 'active' : ''}" type="button" data-category="${escapeHtml(cat)}">${escapeHtml(cat)}</button>
+  `).join('');
+
+  els.categoryTabs.querySelectorAll('.tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.selectedCategory = btn.dataset.category;
+      renderProducts();
+    });
+  });
+
+  const visible = state.products.filter((product) => state.selectedCategory === 'Todos' || product.category === state.selectedCategory);
+
+  els.productsGrid.innerHTML = visible.map((product) => {
+    const available = product.available !== false && Number(product.stock ?? 1) !== 0;
+    const message = `Olá, tenho interesse nesse produto: ${product.name}`;
+    const image = product.image_url || `https://placehold.co/900x650/15100a/f1cc7b?text=${encodeURIComponent(product.name)}`;
+    return `
+      <article class="card product-card reveal visible">
+        <img class="product-image" src="${escapeAttr(image)}" alt="${escapeAttr(product.name)}" loading="lazy" />
+        <div class="product-body">
+          <div class="product-meta">
+            <div>
+              <h3>${escapeHtml(product.name)}</h3>
+              <p>${escapeHtml(product.description || 'Produto disponível no catálogo da barbearia.')}</p>
+            </div>
+            <span class="product-status ${available ? 'available' : 'unavailable'}">${available ? 'Disponível' : 'Indisponível'}</span>
+          </div>
+          <div class="service-top">
+            <strong class="price">${formatCurrency(product.price)}</strong>
+            ${product.category ? `<span class="chip">${escapeHtml(product.category)}</span>` : ''}
+          </div>
+          <a class="btn ${available ? 'btn-whats' : 'btn-secondary'}" ${available ? `href="${whatsappLink(message)}" target="_blank" rel="noopener"` : 'aria-disabled="true"'}>${available ? 'Tenho interesse' : 'Produto indisponível'}</a>
+        </div>
+      </article>
+    `;
+  }).join('') || `<div class="card"><h3>Nenhum produto nesta categoria</h3><p>Cadastre produtos no painel administrativo.</p></div>`;
+}
+
 function renderSlots() {
-  const box = el("slots");
-  const vazio = el("slots-vazio");
-  const slots = gerarSlots();
-  const livres = slots.filter((s) => s.disponivel).length;
-  box.innerHTML = "";
-  if (!slots.length) { vazio.textContent = "A barbearia está fechada nesse dia."; return; }
-  if (!livres) { vazio.textContent = "Esse dia está cheio — escolha outro."; }
-  else { vazio.textContent = ""; }
+  const service = getSelectedService();
+  const date = state.selectedDate;
+  const dateValue = toDateInputValue(date);
+  const weekday = date.getDay();
+  const hours = state.workingHours.find((item) => Number(item.weekday) === weekday);
+  const fullDayBlock = getFullDayBlock(dateValue);
 
-  slots.forEach((s) => {
-    const b = document.createElement("button");
-    b.className = "slot";
-    b.type = "button";
-    b.textContent = s.hm;
-    b.disabled = !s.disponivel;
-    if (s.disponivel) {
-      b.setAttribute("aria-pressed", "false");
-      b.addEventListener("click", () => escolherSlot(s, b));
-    } else {
-      b.setAttribute("aria-label", `${s.hm} — ocupado`);
-    }
-    box.appendChild(b);
+  els.slotDateTitle.textContent = date.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+  els.slotDateSubtitle.textContent = service ? `${service.name} • ${Number(service.duration_minutes || 30)} min` : 'Escolha um serviço';
+  els.dayMessage.hidden = true;
+  els.dayMessage.className = 'day-message';
+  els.slotsGrid.innerHTML = '';
+
+  if (fullDayBlock) {
+    showDayMessage(fullDayBlock.message || 'A barbearia não atenderá neste dia.', 'blocked');
+    return;
+  }
+
+  if (!hours || hours.is_open === false) {
+    showDayMessage('A barbearia não atenderá neste dia.', 'blocked');
+    return;
+  }
+
+  const slots = buildSlots(hours, Number(service?.duration_minutes || 30));
+  const now = new Date();
+  const isToday = dateValue === toDateInputValue(now);
+  const rendered = slots.map((slot) => {
+    const status = getSlotStatus(slot, service, isToday, now);
+    const selected = state.selectedSlot === slot;
+    const label = status === 'available' ? 'Livre' : status === 'blocked' ? 'Bloqueado' : 'Ocupado';
+    return `<button type="button" class="slot ${status} ${selected ? 'selected' : ''}" ${status !== 'available' ? 'disabled' : ''} data-time="${slot}"><span>${slot}</span><small>${label}</small></button>`;
+  }).join('');
+
+  els.slotsGrid.innerHTML = rendered;
+  els.slotsGrid.querySelectorAll('.slot.available').forEach((button) => {
+    button.addEventListener('click', () => selectSlot(button.dataset.time));
   });
-}
-function escolherSlot(s, btn) {
-  state.slot = s;
-  document.querySelectorAll(".slot").forEach((x) => x.setAttribute("aria-pressed", "false"));
-  btn.setAttribute("aria-pressed", "true");
-  el("r-servico").textContent = state.servico.nome;
-  el("r-preco").textContent = `${brl(Number(state.servico.preco))} · pago na barbearia`;
-  el("r-horario").textContent = `${DOW[dowOf(state.dia)]}, ${ddmm(state.dia)} às ${s.hm}`;
-  setStep(3);
-}
 
-// ---------- confirmar (via Edge Function) ----------
-async function confirmar() {
-  const nome = el("f-nome").value.trim();
-  const whats = el("f-whats").value.replace(/\D/g, "");
-  if (nome.length < 2) return toast("Escreva seu nome para confirmar.");
-  if (whats.length < 10 || whats.length > 13) return toast("Confira o número de WhatsApp (com DDD).");
-  if (!state.servico || !state.slot) return toast("Escolha o serviço e o horário.");
-
-  const btn = el("btn-confirmar");
-  btn.disabled = true; btn.textContent = "Confirmando…";
-  try {
-    const res = await fetch(EF_CRIAR_AGENDAMENTO, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      },
-      body: JSON.stringify({
-        servico_id: state.servico.id,
-        cliente_nome: nome,
-        cliente_whatsapp: whats,
-        inicio: state.slot.inicioISO,
-      }),
-    });
-    const out = await res.json().catch(() => ({ ok: false }));
-    if (!out.ok) {
-      toast(out.message || "Não foi possível confirmar. Tente de novo.");
-      if (out.code === "slot_ocupado" || out.code === "fora_horario") { await loadSlots(); setStep(2); }
-      return;
-    }
-    state.agendamento = out.agendamento;
-    mostrarSucesso(nome);
-  } catch {
-    toast("Sem conexão com o servidor. Tente de novo.");
-  } finally {
-    btn.disabled = false; btn.textContent = "Confirmar horário";
+  if (!slots.length) {
+    showDayMessage('Não há horários configurados para este dia.', 'blocked');
+  } else if (!els.slotsGrid.querySelector('.slot.available')) {
+    showDayMessage('Agenda cheia para esta data. Escolha outro dia.', 'full');
   }
 }
 
-// ---------- sucesso + avaliação ----------
-function mostrarSucesso(nome) {
-  el("suc-nome").textContent = nome.split(" ")[0];
-  el("suc-horario").textContent = `${DOW[dowOf(state.dia)]}, ${ddmm(state.dia)} às ${state.slot.hm}`;
-  el("suc-servico").textContent = `${state.servico.nome} · ${brl(Number(state.servico.preco))} na barbearia`;
-  document.querySelectorAll(".step, .stepper, .hero").forEach((x) => (x.style.display = "none"));
-  el("sucesso").classList.add("show");
-  el("sucesso").scrollIntoView({ behavior: "smooth", block: "start" });
+function buildSlots(hours, duration) {
+  const step = Number(APP_CONFIG.slotStepMinutes || 30);
+  const open = timeToMinutes(hours.open_time);
+  const close = timeToMinutes(hours.close_time);
+  const breakStart = hours.break_start ? timeToMinutes(hours.break_start) : null;
+  const breakEnd = hours.break_end ? timeToMinutes(hours.break_end) : null;
+  const slots = [];
+
+  for (let current = open; current + duration <= close; current += step) {
+    const end = current + duration;
+    const inBreak = breakStart !== null && breakEnd !== null && current < breakEnd && end > breakStart;
+    if (!inBreak) slots.push(minutesToTime(current));
+  }
+
+  return slots;
 }
 
-// avaliação interna (oferecida a todos; o botão do Google também)
-let notaEscolhida = 0;
-function initEstrelas() {
-  document.querySelectorAll(".estrela").forEach((star) => {
-    star.addEventListener("click", () => {
-      notaEscolhida = Number(star.dataset.n);
-      document.querySelectorAll(".estrela").forEach((s) =>
-        s.classList.toggle("on", Number(s.dataset.n) <= notaEscolhida));
-    });
+function getSlotStatus(slot, service, isToday, now) {
+  const duration = Number(service?.duration_minutes || 30);
+  const start = timeToMinutes(slot);
+  const end = start + duration;
+
+  if (isToday) {
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    if (start <= nowMinutes) return 'occupied';
+  }
+
+  const partialBlock = state.blocks.find((block) => {
+    if (!block.start_time || !block.end_time) return false;
+    return start < timeToMinutes(block.end_time) && end > timeToMinutes(block.start_time);
   });
-}
-async function enviarFeedback() {
-  if (!notaEscolhida) return toast("Toque nas estrelas para dar sua nota.");
-  const btn = el("btn-feedback");
-  btn.disabled = true;
-  const { error } = await supabase.from("avaliacoes").insert({
-    nota: notaEscolhida,
-    comentario: el("f-comentario").value.trim() || null,
-    agendamento_id: state.agendamento?.id ?? null,
+  if (partialBlock) return 'blocked';
+
+  const busy = state.busySlots.find((busySlot) => {
+    const busyStartTime = busySlot.appointment_time || busySlot.time || busySlot.start_time;
+    const busyDuration = Number(busySlot.duration_minutes || 30);
+    if (!busyStartTime) return false;
+    const busyStart = timeToMinutes(busyStartTime.slice(0, 5));
+    const busyEnd = busyStart + busyDuration;
+    const busyStatus = busySlot.status || 'scheduled';
+    return !['cancelled', 'canceled'].includes(busyStatus) && start < busyEnd && end > busyStart;
   });
-  if (error) { toast("Não consegui enviar o feedback."); btn.disabled = false; return; }
-  el("review-form").innerHTML = `<p class="destaque">Valeu pelo feedback! 🙌</p>`;
+
+  return busy ? 'occupied' : 'available';
 }
 
-// ---------- polling: mantém a disponibilidade fresca ----------
-function initPolling() {
-  setInterval(() => {
-    if (el("s2").classList.contains("show") && state.servico && state.dia) loadSlots();
-  }, POLL_MS);
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && el("s2").classList.contains("show")) loadSlots();
+function getFullDayBlock(dateValue) {
+  return state.blocks.find((block) => {
+    const blockDate = block.block_date || block.date;
+    return blockDate === dateValue && (!block.start_time || !block.end_time) && block.active !== false;
   });
 }
 
-// ---------- boot ----------
-window.addEventListener("DOMContentLoaded", () => {
-  el("btn-confirmar").addEventListener("click", confirmar);
-  el("btn-feedback").addEventListener("click", enviarFeedback);
-  initEstrelas();
-  initPolling();
-  carregar();
-});
+function showDayMessage(message, type) {
+  els.dayMessage.hidden = false;
+  els.dayMessage.textContent = message;
+  els.dayMessage.classList.add(type);
+}
+
+function selectSlot(slot) {
+  state.selectedSlot = slot;
+  els.selectedTime.value = slot;
+  renderSlots();
+}
+
+async function shiftDay(days) {
+  const next = new Date(state.selectedDate);
+  next.setDate(next.getDate() + days);
+  const today = parseDateInput(toDateInputValue(new Date()));
+  if (next < today) return;
+  state.selectedDate = next;
+  els.dateInput.value = toDateInputValue(next);
+  state.selectedSlot = '';
+  els.selectedTime.value = '';
+  await loadDayData();
+  renderSlots();
+}
+
+async function submitBooking(event) {
+  event.preventDefault();
+  const service = getSelectedService();
+  const payload = {
+    client_name: $('#clientName').value.trim(),
+    client_phone: $('#clientPhone').value.trim(),
+    service_id: service?.id,
+    appointment_date: els.dateInput.value,
+    appointment_time: els.selectedTime.value,
+    notes: $('#notes').value.trim()
+  };
+
+  if (!payload.appointment_time) {
+    toast('Escolha um horário disponível antes de confirmar.', 'error');
+    return;
+  }
+
+  if (!isSupabaseReady()) {
+    saveMockBooking(payload, service);
+    toast('Agendamento salvo em modo demonstração. Configure o Supabase para salvar no banco.', 'success');
+    els.bookingForm.reset();
+    setupDateInput();
+    await loadDayData();
+    renderSlots();
+    return;
+  }
+
+  const button = els.bookingForm.querySelector('button[type="submit"]');
+  button.disabled = true;
+  button.textContent = 'Confirmando...';
+
+  try {
+    const { data, error } = await db.functions.invoke('criar-agendamento', { body: payload });
+    if (error || data?.error) throw new Error(data?.error || error?.message || 'Não foi possível agendar.');
+    toast('Agendamento confirmado! Aguardamos você na barbearia.', 'success');
+    els.bookingForm.reset();
+    setupDateInput();
+    await loadDayData();
+    renderSlots();
+  } catch (err) {
+    toast(err.message || 'Erro ao confirmar agendamento.', 'error');
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Confirmar agendamento';
+  }
+}
+
+function saveMockBooking(payload, service) {
+  const current = JSON.parse(localStorage.getItem('duim_busy_slots') || '[]');
+  current.push({
+    date: payload.appointment_date,
+    appointment_date: payload.appointment_date,
+    appointment_time: payload.appointment_time,
+    duration_minutes: service?.duration_minutes || 30,
+    status: 'scheduled'
+  });
+  localStorage.setItem('duim_busy_slots', JSON.stringify(current));
+}
+
+function getSelectedService() {
+  return state.services.find((service) => String(service.id) === String(els.serviceSelect?.value)) || state.services[0];
+}
+
+function toast(message, type = 'success') {
+  els.toast.textContent = message;
+  els.toast.className = `toast ${type} show`;
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => els.toast.classList.remove('show'), 4200);
+}
+
+function timeToMinutes(time) {
+  const [h, m] = String(time).slice(0, 5).split(':').map(Number);
+  return h * 60 + (m || 0);
+}
+
+function minutesToTime(minutes) {
+  const h = String(Math.floor(minutes / 60)).padStart(2, '0');
+  const m = String(minutes % 60).padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+function toDateInputValue(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function parseDateInput(value) {
+  const [y, m, d] = value.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function escapeHtml(value = '') {
+  return String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[char]));
+}
+function escapeAttr(value = '') { return escapeHtml(value); }

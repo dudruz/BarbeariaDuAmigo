@@ -1,95 +1,128 @@
-// ============================================================
-//  Edge Function: criar-agendamento
-//  Recebe { servico_id, cliente_nome, cliente_whatsapp, inicio }
-//  Valida, calcula o fim pela duração do serviço e insere.
-//  A constraint EXCLUDE (sem_sobreposicao) é o juiz final da
-//  corrida: se dois pedidos batem no mesmo horário, um grava e
-//  o outro estoura 23P01 -> devolvemos "slot_ocupado".
-//
-//  Deploy:  supabase functions deploy criar-agendamento
-//  Secrets: SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY já vêm
-//           injetados pelo Supabase; não precisa COLE_AQUI aqui.
-// ============================================================
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const cors = {
-  // Em produção, troque "*" pelo domínio do GitHub Pages.
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...cors, "Content-Type": "application/json" },
-  });
-
-// weekday (0=Dom..6=Sáb) e HH:MM no fuso da barbearia
-const DOW: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
-const dowSP = (d: Date) =>
-  DOW[new Intl.DateTimeFormat("en-US", { timeZone: "America/Sao_Paulo", weekday: "short" }).format(d)];
-const hhmmSP = (d: Date) =>
-  new Intl.DateTimeFormat("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
+const json = (body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  if (req.method !== "POST") return json({ ok: false, message: "Método não permitido." }, 405);
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method !== 'POST') return json({ error: 'Método não permitido.' }, 405);
 
-  let body: any;
-  try { body = await req.json(); } catch { return json({ ok: false, message: "Requisição inválida." }, 400); }
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
 
-  const nome = String(body?.cliente_nome ?? "").trim();
-  const whats = String(body?.cliente_whatsapp ?? "").replace(/\D/g, "");
-  const servicoId = String(body?.servico_id ?? "");
-  const inicio = new Date(String(body?.inicio ?? ""));
+    const body = await req.json();
+    const clientName = String(body.client_name || '').trim();
+    const clientPhone = String(body.client_phone || '').trim();
+    const serviceId = String(body.service_id || '').trim();
+    const appointmentDate = String(body.appointment_date || '').trim();
+    const appointmentTime = String(body.appointment_time || '').trim().slice(0, 5);
+    const notes = String(body.notes || '').trim();
 
-  if (nome.length < 2) return json({ ok: false, code: "nome", message: "Informe seu nome." }, 400);
-  if (whats.length < 10 || whats.length > 13) return json({ ok: false, code: "whatsapp", message: "WhatsApp inválido." }, 400);
-  if (!servicoId) return json({ ok: false, code: "servico", message: "Escolha um serviço." }, 400);
-  if (isNaN(inicio.getTime())) return json({ ok: false, code: "horario", message: "Horário inválido." }, 400);
-  if (inicio.getTime() <= Date.now()) return json({ ok: false, code: "passado", message: "Esse horário já passou." }, 409);
+    if (!clientName || !clientPhone || !serviceId || !appointmentDate || !appointmentTime) {
+      return json({ error: 'Preencha nome, WhatsApp, serviço, data e horário.' }, 400);
+    }
 
-  const admin = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+    const today = new Date();
+    const selected = new Date(`${appointmentDate}T00:00:00`);
+    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    if (selected < todayOnly) return json({ error: 'Não é possível agendar em uma data passada.' }, 400);
 
-  // serviço ativo?
-  const { data: servico, error: eS } = await admin
-    .from("servicos").select("id, duracao_min, ativo").eq("id", servicoId).single();
-  if (eS || !servico || !servico.ativo)
-    return json({ ok: false, code: "servico", message: "Serviço indisponível." }, 409);
+    const { data: service, error: serviceError } = await supabase
+      .from('services')
+      .select('id, name, price, duration_minutes, active')
+      .eq('id', serviceId)
+      .eq('active', true)
+      .maybeSingle();
 
-  const fim = new Date(inicio.getTime() + servico.duracao_min * 60000);
+    if (serviceError || !service) return json({ error: 'Serviço indisponível.' }, 400);
 
-  // dentro do horário de funcionamento? (rede de segurança; o front já filtra)
-  const { data: exp } = await admin
-    .from("horarios_funcionamento").select("abre, fecha").eq("dia_semana", dowSP(inicio)).eq("ativo", true);
-  const dentro = (exp ?? []).some((h) => hhmmSP(inicio) >= h.abre.slice(0, 5) && hhmmSP(fim) <= h.fecha.slice(0, 5));
-  if (!dentro) return json({ ok: false, code: "fora_horario", message: "Fora do horário de atendimento." }, 409);
+    const weekday = selected.getDay();
+    const { data: hours } = await supabase
+      .from('working_hours')
+      .select('*')
+      .eq('weekday', weekday)
+      .maybeSingle();
 
-  // bloqueio (almoço/folga/feriado) sobreposto?
-  const { data: blk } = await admin
-    .from("bloqueios").select("id")
-    .lt("inicio", fim.toISOString()).gt("fim", inicio.toISOString()).limit(1);
-  if (blk && blk.length) return json({ ok: false, code: "fora_horario", message: "Esse horário está bloqueado." }, 409);
+    if (!hours || hours.is_open === false) return json({ error: 'A barbearia não atenderá neste dia.' }, 400);
 
-  // insere — a EXCLUDE decide a corrida
-  const { data: ag, error: eI } = await admin.from("agendamentos").insert({
-    servico_id: servicoId,
-    cliente_nome: nome,
-    cliente_whatsapp: whats,
-    inicio: inicio.toISOString(),
-    fim: fim.toISOString(),
-    status: "confirmado",
-  }).select("id, inicio, fim").single();
+    const start = toMinutes(appointmentTime);
+    const duration = Number(service.duration_minutes || 30);
+    const end = start + duration;
+    const open = toMinutes(hours.open_time);
+    const close = toMinutes(hours.close_time);
 
-  if (eI) {
-    if (eI.code === "23P01" || /sobreposicao|exclus/i.test(eI.message))
-      return json({ ok: false, code: "slot_ocupado", message: "Esse horário acabou de ser preenchido." }, 409);
-    return json({ ok: false, code: "erro", message: "Não foi possível confirmar. Tente de novo." }, 500);
+    if (start < open || end > close) return json({ error: 'Horário fora do funcionamento da barbearia.' }, 400);
+
+    if (hours.break_start && hours.break_end) {
+      const breakStart = toMinutes(hours.break_start);
+      const breakEnd = toMinutes(hours.break_end);
+      if (start < breakEnd && end > breakStart) return json({ error: 'Horário dentro do intervalo de pausa.' }, 400);
+    }
+
+    const { data: blocks } = await supabase
+      .from('schedule_blocks')
+      .select('*')
+      .eq('block_date', appointmentDate)
+      .eq('active', true);
+
+    const blocked = (blocks || []).find((block) => {
+      if (!block.start_time || !block.end_time) return true;
+      return start < toMinutes(block.end_time) && end > toMinutes(block.start_time);
+    });
+
+    if (blocked) {
+      return json({ error: blocked.message || 'Esse dia foi bloqueado pelo barbeiro.' }, 400);
+    }
+
+    const { data: appointments } = await supabase
+      .from('appointments')
+      .select('appointment_time, duration_minutes, status')
+      .eq('appointment_date', appointmentDate)
+      .in('status', ['scheduled', 'confirmed', 'completed', 'blocked']);
+
+    const conflict = (appointments || []).find((item) => {
+      const busyStart = toMinutes(String(item.appointment_time).slice(0, 5));
+      const busyEnd = busyStart + Number(item.duration_minutes || 30);
+      return start < busyEnd && end > busyStart;
+    });
+
+    if (conflict) return json({ error: 'Esse horário acabou de ser ocupado. Escolha outro horário.' }, 409);
+
+    const { data: inserted, error: insertError } = await supabase
+      .from('appointments')
+      .insert({
+        client_name: clientName,
+        client_phone: clientPhone,
+        service_id: service.id,
+        service_name: service.name,
+        price: service.price,
+        duration_minutes: service.duration_minutes,
+        appointment_date: appointmentDate,
+        appointment_time: appointmentTime,
+        status: 'scheduled',
+        payment_status: 'pending',
+        notes
+      })
+      .select('id')
+      .single();
+
+    if (insertError) return json({ error: insertError.message }, 400);
+
+    return json({ ok: true, appointment_id: inserted.id });
+  } catch (error) {
+    return json({ error: error instanceof Error ? error.message : 'Erro inesperado ao criar agendamento.' }, 500);
   }
-
-  return json({ ok: true, agendamento: ag });
 });
+
+function toMinutes(time: string) {
+  const [h, m] = String(time).slice(0, 5).split(':').map(Number);
+  return h * 60 + (m || 0);
+}
