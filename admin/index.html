@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0c0b09" />
+  <meta name="robots" content="noindex,nofollow" />
   <title>Painel DUIM Barber</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,13 +14,13 @@
 <body>
   <section class="login-screen" id="loginScreen">
     <form class="login-card" id="loginForm">
-      <div class="brand-row"><span class="logo">D</span><div><h1>Painel DUIM</h1><p>Acesso liberado apenas para e-mails autorizados.</p></div></div>
-      <div class="warning" id="configWarning" hidden>Configure o Supabase em <strong>assets/js/supabase.js</strong> e rode o schema para ativar a segurança real por e-mail.</div>
+      <div class="brand-row"><span class="logo">D</span><div><h1>Painel DUIM</h1><p>Entre com e-mail e senha autorizados.</p></div></div>
+      <div class="warning" id="configWarning" hidden>Configure o Supabase em <strong>assets/js/supabase.js</strong>, crie o usuário em <strong>Authentication</strong> e libere o mesmo e-mail na tabela <strong>admin_users</strong>.</div>
       <div class="error" id="loginError" hidden></div>
-      <div class="field"><label for="email">E-mail autorizado</label><input class="input" type="email" id="email" required autocomplete="email" placeholder="duim@email.com" /></div>
-      <button class="btn btn-primary btn-full" type="submit">Entrar com link mágico</button>
-      <button class="btn btn-secondary btn-full" type="button" id="demoAccess">Abrir modo demonstração local</button>
-      <p>O modo demonstração não substitui as políticas RLS. Use apenas para visualizar o layout sem banco.</p>
+      <div class="field"><label for="email">E-mail</label><input class="input" type="email" id="email" required autocomplete="email" placeholder="duim@email.com" /></div>
+      <div class="field"><label for="password">Senha</label><input class="input" type="password" id="password" required autocomplete="current-password" placeholder="Digite sua senha" /></div>
+      <button class="btn btn-primary btn-full" type="submit">Entrar no painel</button>
+      <p>O painel não aparece no site principal. Para acessar, entre diretamente pela URL <strong>/admin/</strong>.</p>
     </form>
   </section>
 

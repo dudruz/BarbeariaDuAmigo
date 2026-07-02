@@ -10,7 +10,7 @@ import {
 
 const db = getSupabaseClient();
 const state = {
-  demo: !isSupabaseReady(),
+  demo: false,
   session: null,
   admin: null,
   selectedDate: new Date(),
@@ -31,7 +31,6 @@ const els = {
   loginForm: $('#loginForm'),
   loginError: $('#loginError'),
   configWarning: $('#configWarning'),
-  demoAccess: $('#demoAccess'),
   appShell: $('#appShell'),
   sidebar: $('#sidebar'),
   openSidebar: $('#openSidebar'),
@@ -66,8 +65,9 @@ async function init() {
   setupAuth();
   setupActions();
 
-  if (state.demo) {
+  if (!isSupabaseReady() || !db) {
     els.configWarning.hidden = false;
+    showLoginError('O login seguro exige Supabase configurado. Preencha SUPABASE_URL e SUPABASE_ANON_KEY antes de usar o painel.', true);
     return;
   }
 
@@ -98,28 +98,28 @@ function setupAuth() {
   els.loginForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const email = $('#email').value.trim().toLowerCase();
+    const password = $('#password').value;
     hideLoginError();
 
-    if (!isSupabaseReady()) {
-      showLoginError('Configure o Supabase antes de usar o login seguro. Use demonstração apenas para visualizar.');
+    if (!isSupabaseReady() || !db) {
+      showLoginError('Configure o Supabase antes de usar o login por e-mail e senha.');
       return;
     }
 
-    const { error } = await db.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.href }
-    });
-
+    const { data, error } = await db.auth.signInWithPassword({ email, password });
     if (error) {
-      showLoginError(error.message);
-    } else {
-      showLoginError('Enviamos um link mágico para seu e-mail autorizado. Abra o link para entrar.', false);
+      showLoginError('E-mail ou senha inválidos. Confira também se o usuário foi criado no Supabase Auth.');
+      return;
     }
-  });
 
-  els.demoAccess.addEventListener('click', async () => {
-    state.demo = true;
-    await enterApp({ user: { email: 'demo@duim.local' } });
+    const ok = await checkAdmin(data.user.email);
+    if (!ok) {
+      await db.auth.signOut();
+      showLoginError('Acesso negado. Este e-mail entrou no Auth, mas não está liberado na tabela admin_users.');
+      return;
+    }
+
+    await enterApp(data.session);
   });
 
   els.logoutButton.addEventListener('click', async () => {

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0c0b09" />
   <meta name="description" content="Agende seu corte na DUIM Barber, veja serviços, produtos e localização da barbearia." />
-  <title>DUIM Barber | Agendamento e Catálogo</title>
+  <title>DUIM Barber | Agendamento online</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -17,14 +17,13 @@
     <div class="container topbar-inner">
       <a class="brand" href="#topo" aria-label="Página inicial DUIM Barber">
         <span class="brand-mark">D</span>
-        <span class="brand-copy"><strong>DUIM Barber</strong><span>Agenda • Estilo • Catálogo</span></span>
+        <span class="brand-copy"><strong>DUIM Barber</strong><span>Agenda online</span></span>
       </a>
       <nav class="nav-desktop" aria-label="Navegação principal">
         <a href="#servicos">Serviços</a>
         <a href="#agenda">Agendar</a>
         <a href="#loja">Loja</a>
         <a href="#localizacao">Localização</a>
-        <a href="admin/" class="desktop-only">Painel</a>
       </nav>
       <a class="btn btn-primary desktop-only" id="headerWhats" href="#" target="_blank" rel="noopener">WhatsApp</a>
       <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu" aria-expanded="false">☰</button>
@@ -36,7 +35,6 @@
     <a href="#agenda">Agendar horário</a>
     <a href="#loja">Ver loja</a>
     <a href="#localizacao">Localização</a>
-    <a href="admin/">Painel administrativo</a>
     <a href="#" id="drawerWhats" class="cta" target="_blank" rel="noopener">Chamar no WhatsApp</a>
   </nav>
 
@@ -44,39 +42,24 @@
     <section class="hero">
       <div class="container hero-grid">
         <div class="hero-copy reveal">
-          <span class="eyebrow">Agendamento rápido e pagamento presencial</span>
-          <h1 class="hero-title">Seu corte <span>no horário certo.</span></h1>
-          <p>Escolha o serviço, selecione um horário disponível e confirme em poucos cliques. A loja está em formato de catálogo para você conhecer os produtos da barbearia.</p>
+          <span class="eyebrow">DUIM Barber</span>
+          <h1 class="hero-title">Agende seu corte sem complicação.</h1>
+          <p>Escolha o serviço, selecione um horário disponível e confirme pelo site. Atendimento direto, rápido e pensado para celular.</p>
           <div class="hero-actions">
             <a class="btn btn-primary" href="#agenda">Agendar agora</a>
-            <a class="btn btn-secondary" href="#loja">Ver produtos</a>
+            <a class="btn btn-secondary" id="heroWhats" href="#" target="_blank" rel="noopener">Chamar no WhatsApp</a>
           </div>
-          <div class="hero-note">
+          <div class="hero-note clean">
             <span aria-hidden="true">💈</span>
-            <p><strong>Pagamento dos serviços presencial.</strong><br>Você paga diretamente na barbearia no momento do atendimento.</p>
+            <p><strong>Pagamento presencial.</strong> Você paga na barbearia no momento do atendimento.</p>
           </div>
         </div>
-        <div class="hero-card reveal" aria-label="Barbearia moderna">
-          <div class="hero-badge">
-            <div class="hero-badge-main">
-              <strong>Agenda simples no celular</strong>
-              <span>Horários claros, bloqueios corretos e contato direto.</span>
-            </div>
-            <div class="quick-stats">
-              <div class="stat"><strong>Mobile</strong><span>primeiro</span></div>
-              <div class="stat"><strong>Catálogo</strong><span>sem checkout</span></div>
-              <div class="stat"><strong>Seguro</strong><span>admin liberado</span></div>
-            </div>
+        <div class="hero-card clean-hero-card reveal" aria-label="Resumo do atendimento">
+          <div class="hero-badge simple">
+            <strong>Serviços, agenda, loja e localização em um só lugar.</strong>
+            <span>Sem checkout online. A loja funciona apenas como catálogo.</span>
           </div>
         </div>
-      </div>
-    </section>
-
-    <section class="section compact" id="atalhos">
-      <div class="container grid cards-3">
-        <a class="card reveal" href="#agenda"><span class="card-icon">📅</span><h3>Agende em segundos</h3><p>Escolha serviço, dia e horário com botões grandes e fáceis de tocar.</p></a>
-        <a class="card reveal" href="#localizacao"><span class="card-icon">📍</span><h3>Chegue fácil</h3><p>Endereço organizado, mapa e botão para abrir direto no Google Maps.</p></a>
-        <a class="card reveal" href="#avaliar"><span class="card-icon">⭐</span><h3>Avalie no Google</h3><p>Sem avaliações falsas no site. Feedback real direto no perfil da barbearia.</p></a>
       </div>
     </section>
 
@@ -85,7 +68,7 @@
         <div class="section-head reveal">
           <span class="eyebrow">Serviços</span>
           <h2>Escolha seu atendimento</h2>
-          <p>Os serviços são carregados do Supabase quando configurado. Se o banco ainda não estiver conectado, o site exibe exemplos seguros para visualização.</p>
+          <p>Escolha o serviço e vá direto para o agendamento.</p>
         </div>
         <div class="grid cards-3" id="servicesGrid" aria-live="polite"></div>
       </div>
@@ -96,7 +79,7 @@
         <div class="section-head reveal">
           <span class="eyebrow">Agenda online</span>
           <h2>Reserve seu horário</h2>
-          <p>Horários fora do funcionamento, ocupados ou bloqueados ficam indisponíveis. Folgas têm mensagem própria, sem confundir com agenda cheia.</p>
+          <p>Selecione data, serviço e horário disponível em poucos toques.</p>
         </div>
 
         <div class="scheduler-shell">
@@ -156,7 +139,7 @@
         <div class="section-head reveal">
           <span class="eyebrow">Loja catálogo</span>
           <h2>Produtos da barbearia</h2>
-          <p>A loja está como vitrine. Sem checkout, carrinho ou pagamento online ativo neste momento.</p>
+          <p>Produtos disponíveis para conhecer e chamar no WhatsApp.</p>
         </div>
         <div class="catalog-tools reveal">
           <div class="category-tabs" id="categoryTabs" aria-label="Categorias de produtos"></div>
@@ -193,7 +176,7 @@
           <div>
             <span class="eyebrow">Feedback real</span>
             <h2>Avalie nossa barbearia no Google</h2>
-            <p>Sua avaliação ajuda outros clientes a conhecerem o atendimento. Removemos blocos falsos de estrelas e deixamos o feedback direto no Google.</p>
+            <p>Sua avaliação ajuda outros clientes a conhecerem o atendimento.</p>
           </div>
           <a class="btn btn-primary" id="reviewButton" href="#" target="_blank" rel="noopener">Avaliar no Google</a>
         </div>

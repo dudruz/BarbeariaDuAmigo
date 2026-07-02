@@ -1,0 +1,12 @@
+{
+  "name": "duim-barber-static",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Site estático DUIM Barber com painel e Supabase.",
+  "scripts": {
+    "build": "echo \"Projeto estático: nenhum build necessário\"",
+    "start": "npx serve ."
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

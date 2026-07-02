@@ -265,3 +265,24 @@ p { color: var(--muted); line-height: 1.65; }
   .floating-actions { bottom: 18px; }
   .toast { left: auto; right: 18px; width: min(420px, calc(100% - 36px)); bottom: 18px; }
 }
+
+
+/* Ajustes home limpa */
+.hero { padding: 30px 0 36px; }
+.hero-copy { max-width: 720px; }
+.hero-title { max-width: 760px; }
+.hero-note.clean { align-items: center; padding: 12px 14px; }
+.clean-hero-card { min-height: 260px; opacity: .94; }
+.hero-badge.simple { position: absolute; left: 16px; right: 16px; bottom: 16px; padding: 16px; border-radius: 22px; background: rgba(12,11,9,.78); backdrop-filter: blur(16px); border: 1px solid var(--line); }
+.hero-badge.simple strong { display: block; font-size: 1.1rem; margin-bottom: 6px; }
+.hero-badge.simple span { color: var(--muted); font-size: .92rem; }
+@media (max-width: 760px) {
+  .hero-grid { gap: 18px; }
+  .hero-card.clean-hero-card { display: none; }
+  .section { padding: 42px 0; }
+  .section-head { margin-bottom: 16px; }
+}
+@media (min-width: 960px) {
+  .hero.clean, .hero { padding-top: 62px; padding-bottom: 58px; }
+  .clean-hero-card { min-height: 420px; }
+}

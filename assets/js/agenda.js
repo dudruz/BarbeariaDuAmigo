@@ -58,7 +58,7 @@ async function init() {
 
 function setupStaticLinks() {
   const defaultWhatsapp = whatsappLink('Olá, vim pelo site e gostaria de atendimento.');
-  ['headerWhats', 'drawerWhats', 'floatWhats', 'locationWhats'].forEach((id) => {
+  ['headerWhats', 'drawerWhats', 'heroWhats', 'floatWhats', 'locationWhats'].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.href = defaultWhatsapp;
   });
